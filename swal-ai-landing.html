@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWAL AI — Your Second Brain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #020408;
+    --bg2: #060d14;
+    --panel: #0a1520;
+    --border: #0e2a3d;
+    --accent: #00e5ff;
+    --accent2: #00ff9d;
+    --accent3: #ff2d6b;
+    --text: #c8dde8;
+    --text-dim: #4a6b7c;
+    --text-bright: #eaf6fb;
+    --glow: 0 0 20px rgba(0,229,255,0.35);
+    --glow2: 0 0 20px rgba(0,255,157,0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(0,229,255,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.18s ease-out, width 0.25s, height 0.25s;
+  }
+
+  /* SCANLINES OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9000;
+  }
+
+  /* NOISE TEXTURE */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 8999;
+    opacity: 0.4;
+  }
+
+  /* GRID BACKGROUND */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 60px;
+    border-bottom: 1px solid rgba(0,229,255,0.08);
+    background: rgba(2,4,8,0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 0.1em;
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--accent2); }
+
+  .nav-links {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  .nav-cta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    cursor: none;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+  }
+  .nav-cta:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: var(--glow);
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 140px 40px 80px;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  /* Radial glow center */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px; height: 700px;
+    background: radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+  .hero-eyebrow::before { content: '> '; color: var(--accent); }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(3.5rem, 9vw, 8.5rem);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+  .hero-title .accent-word {
+    color: var(--accent);
+    text-shadow: var(--glow);
+    display: block;
+  }
+
+  .hero-title .glitch {
+    position: relative;
+    display: inline-block;
+  }
+  .hero-title .glitch::before,
+  .hero-title .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+  }
+  .hero-title .glitch::before {
+    color: var(--accent3);
+    clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%);
+    animation: glitch1 4s infinite 2s;
+    opacity: 0;
+  }
+  .hero-title .glitch::after {
+    color: var(--accent2);
+    clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+    animation: glitch2 4s infinite 2.1s;
+    opacity: 0;
+  }
+
+  @keyframes glitch1 {
+    0%, 85%, 100% { opacity: 0; transform: none; }
+    87% { opacity: 1; transform: translateX(-4px); }
+    89% { opacity: 0; }
+    91% { opacity: 1; transform: translateX(4px); }
+    93% { opacity: 0; }
+  }
+  @keyframes glitch2 {
+    0%, 85%, 100% { opacity: 0; transform: none; }
+    88% { opacity: 1; transform: translateX(4px); }
+    90% { opacity: 0; }
+    92% { opacity: 1; transform: translateX(-3px); }
+    94% { opacity: 0; }
+  }
+
+  .hero-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(0.85rem, 1.5vw, 1rem);
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 540px;
+    margin: 28px auto 52px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+  }
+  .hero-sub em { color: var(--accent2); font-style: normal; }
+
+  .hero-actions {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.8s;
+  }
+
+  .btn-primary {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 16px 38px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    cursor: none;
+    text-decoration: none;
+    font-weight: 700;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+  .btn-primary:hover { box-shadow: 0 0 30px rgba(0,229,255,0.6); }
+  .btn-primary:hover::before { transform: translateX(100%); }
+
+  .btn-secondary {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 16px 38px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    cursor: none;
+    text-decoration: none;
+    transition: border-color 0.3s, color 0.3s;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Terminal badge */
+  .hero-badge {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 1.2s;
+  }
+  .hero-badge::before, .hero-badge::after {
+    content: '';
+    width: 40px; height: 1px;
+    background: var(--border);
+  }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position: absolute;
+    bottom: 30px;
+    right: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 1.5s;
+  }
+  .scroll-hint span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    writing-mode: vertical-rl;
+  }
+  .scroll-line {
+    width: 1px; height: 50px;
+    background: linear-gradient(var(--accent), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* ─── TERMINAL STRIP ─── */
+  .terminal-strip {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    padding: 18px 0;
+    overflow: hidden;
+  }
+  .terminal-track {
+    display: flex;
+    gap: 60px;
+    width: max-content;
+    animation: scrollLeft 28s linear infinite;
+  }
+  .terminal-strip:hover .terminal-track { animation-play-state: paused; }
+  @keyframes scrollLeft {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .terminal-item {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+  }
+  .terminal-item .cmd { color: var(--accent2); }
+  .terminal-item .val { color: var(--accent); }
+
+  /* ─── SECTIONS ─── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 120px 60px;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    max-width: 60px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-bright);
+    margin-bottom: 20px;
+  }
+  .section-title .hl { color: var(--accent); }
+
+  .section-desc {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+    max-width: 520px;
+  }
+
+  /* ─── HOW IT WORKS ─── */
+  .how-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    margin-top: 60px;
+  }
+
+  .code-window {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .code-window::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,229,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .code-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+  .code-filename {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-left: 10px;
+  }
+  .code-body {
+    padding: 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.9;
+  }
+  .code-body .ln { color: var(--text-dim); margin-right: 18px; user-select: none; }
+  .code-body .kw { color: #c792ea; }
+  .code-body .fn { color: var(--accent2); }
+  .code-body .str { color: #f78c6c; }
+  .code-body .cm { color: #546e7a; font-style: italic; }
+  .code-body .acc { color: var(--accent); }
+  .code-body .num { color: #f07178; }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+  .step {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    opacity: 0;
+    transform: translateX(30px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .step.visible { opacity: 1; transform: none; }
+  .step-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.3);
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.05em;
+  }
+  .step-content h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+  .step-content p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  /* ─── FEATURES ─── */
+  .features-section {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    max-width: 100%;
+    padding: 120px 0;
+  }
+  .features-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 60px;
+  }
+  .features-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 70px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .feature-card {
+    background: var(--panel);
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease, background 0.3s;
+  }
+  .feature-card.visible { opacity: 1; transform: none; }
+  .feature-card:hover { background: #0d1f2e; }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    font-size: 1.1rem;
+    color: var(--accent);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .feature-card:hover .feature-icon {
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .feature-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+  .feature-card p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    line-height: 1.75;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    margin-top: 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--text-dim);
+  }
+  .feature-tag.active {
+    border-color: rgba(0,255,157,0.4);
+    color: var(--accent2);
+  }
+
+  /* ─── STATS ─── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 70px;
+  }
+  .stat-box {
+    background: var(--bg2);
+    padding: 40px 30px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ─── ARCHITECTURE ─── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 80px;
+    align-items: start;
+    margin-top: 60px;
+  }
+
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .arch-node {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .arch-node:hover { border-color: var(--accent); }
+  .arch-node-icon {
+    font-size: 1rem;
+    width: 36px; text-align: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .arch-node-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-bright);
+  }
+  .arch-node-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .arch-node-badge {
+    margin-left: auto;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    padding: 3px 9px;
+    border: 1px solid rgba(0,229,255,0.25);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .arch-connector {
+    width: 1px; height: 30px;
+    background: linear-gradient(var(--accent), var(--border));
+    margin-left: 30px;
+    opacity: 0.5;
+    position: relative;
+  }
+  .arch-connector::after {
+    content: '▼';
+    position: absolute;
+    bottom: -8px;
+    left: -5px;
+    font-size: 0.5rem;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  .arch-features {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .arch-feat {
+    padding: 22px 26px;
+    border-left: 2px solid var(--border);
+    transition: border-color 0.3s;
+  }
+  .arch-feat:hover { border-color: var(--accent2); }
+  .arch-feat h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .arch-feat h4 .dot2 {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+  }
+  .arch-feat p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  /* ─── CTA ─── */
+  .cta-section {
+    max-width: 100%;
+    padding: 130px 60px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 900px; height: 400px;
+    background: radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .cta-title {
+    font-size: clamp(2.5rem, 5vw, 5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--text-bright);
+    margin-bottom: 30px;
+    position: relative;
+  }
+  .cta-title .hl { color: var(--accent); text-shadow: var(--glow); }
+  .cta-desc {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    max-width: 460px;
+    margin: 0 auto 50px;
+    line-height: 1.8;
+    position: relative;
+  }
+  .cta-actions {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 40px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+  .footer-logo span { color: var(--accent2); }
+  .footer-links {
+    display: flex;
+    gap: 30px;
+    list-style: none;
+  }
+  .footer-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+  .footer-copy {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    nav { padding: 18px 24px; }
+    .nav-links { display: none; }
+    section { padding: 80px 24px; }
+    .how-grid, .arch-grid { grid-template-columns: 1fr; gap: 40px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .features-header { flex-direction: column; gap: 20px; }
+    .cta-section { padding: 80px 24px; }
+    footer { flex-direction: column; gap: 20px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">SWAL<span>_</span>AI</a>
+  <ul class="nav-links">
+    <li><a href="#how">// how_it_works</a></li>
+    <li><a href="#features">// features</a></li>
+    <li><a href="#arch">// architecture</a></li>
+    <li><a href="#github">// github</a></li>
+  </ul>
+  <a href="#start" class="nav-cta">[ start_session ]</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <p class="hero-eyebrow">init // swal-ai v0.1 — powered by claude 4.6</p>
+  <h1 class="hero-title">
+    <span class="glitch" data-text="YOUR SECOND">YOUR SECOND</span>
+    <span class="accent-word">BRAIN.</span>
+  </h1>
+  <p class="hero-sub">
+    A personalized AI architect that understands your <em>entire codebase</em> in a single session. 
+    Custom-engineered prompt architectures that eliminate looping and maximize efficiency.
+  </p>
+  <div class="hero-actions">
+    <a href="#start" class="btn-primary">→ access_swal_ai</a>
+    <a href="https://github.com" class="btn-secondary">⌥ view_on_github</a>
+  </div>
+  <p class="hero-badge">claude 4.6 hybrid reasoning &nbsp;·&nbsp; context-aware &nbsp;·&nbsp; zero looping</p>
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<!-- TERMINAL STRIP -->
+<div class="terminal-strip">
+  <div class="terminal-track" id="termTrack">
+    <span class="terminal-item"><span class="cmd">$</span> swal init --context <span class="val">./src</span></span>
+    <span class="terminal-item"><span class="cmd">→</span> indexing <span class="val">4,291</span> files...</span>
+    <span class="terminal-item"><span class="cmd">✓</span> context loaded in <span class="val">1.2s</span></span>
+    <span class="terminal-item"><span class="cmd">$</span> swal ask <span class="val">"explain auth flow"</span></span>
+    <span class="terminal-item"><span class="cmd">→</span> claude 4.6 reasoning <span class="val">active</span></span>
+    <span class="terminal-item"><span class="cmd">✓</span> no hallucinations detected</span>
+    <span class="terminal-item"><span class="cmd">$</span> swal refactor --target <span class="val">api/routes.ts</span></span>
+    <span class="terminal-item"><span class="cmd">→</span> tokens optimized by <span class="val">42%</span></span>
+    <span class="terminal-item"><span class="cmd">✓</span> context window <span class="val">intact</span></span>
+    <!-- Duplicate for infinite scroll -->
+    <span class="terminal-item"><span class="cmd">$</span> swal init --context <span class="val">./src</span></span>
+    <span class="terminal-item"><span class="cmd">→</span> indexing <span class="val">4,291</span> files...</span>
+    <span class="terminal-item"><span class="cmd">✓</span> context loaded in <span class="val">1.2s</span></span>
+    <span class="terminal-item"><span class="cmd">$</span> swal ask <span class="val">"explain auth flow"</span></span>
+    <span class="terminal-item"><span class="cmd">→</span> claude 4.6 reasoning <span class="val">active</span></span>
+    <span class="terminal-item"><span class="cmd">✓</span> no hallucinations detected</span>
+    <span class="terminal-item"><span class="cmd">$</span> swal refactor --target <span class="val">api/routes.ts</span></span>
+    <span class="terminal-item"><span class="cmd">→</span> tokens optimized by <span class="val">42%</span></span>
+    <span class="terminal-item"><span class="cmd">✓</span> context window <span class="val">intact</span></span>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <p class="section-label">01 // how_it_works</p>
+  <div class="how-grid">
+    <div class="code-window">
+      <div class="code-titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <span class="code-filename">swal_session.py</span>
+      </div>
+      <div class="code-body">
+        <div><span class="ln">01</span><span class="cm"># SWAL AI — session bootstrap</span></div>
+        <div><span class="ln">02</span></div>
+        <div><span class="ln">03</span><span class="kw">from</span> swal <span class="kw">import</span> <span class="fn">SwalSession</span>, <span class="fn">ContextLoader</span></div>
+        <div><span class="ln">04</span></div>
+        <div><span class="ln">05</span><span class="cm"># Load your entire codebase</span></div>
+        <div><span class="ln">06</span><span class="acc">ctx</span> = <span class="fn">ContextLoader</span>(<span class="str">"./src"</span>)</div>
+        <div><span class="ln">07</span><span class="acc">ctx</span>.index(depth=<span class="num">∞</span>, smart=<span class="num">True</span>)</div>
+        <div><span class="ln">08</span></div>
+        <div><span class="ln">09</span><span class="cm"># Initialize SWAL architect</span></div>
+        <div><span class="ln">10</span><span class="acc">swal</span> = <span class="fn">SwalSession</span>(</div>
+        <div><span class="ln">11</span>&nbsp;&nbsp;model=<span class="str">"claude-4.6-hybrid"</span>,</div>
+        <div><span class="ln">12</span>&nbsp;&nbsp;context=<span class="acc">ctx</span>,</div>
+        <div><span class="ln">13</span>&nbsp;&nbsp;loop_guard=<span class="num">True</span>,</div>
+        <div><span class="ln">14</span>&nbsp;&nbsp;persona=<span class="str">"senior-architect"</span></div>
+        <div><span class="ln">15</span>)</div>
+        <div><span class="ln">16</span></div>
+        <div><span class="ln">17</span><span class="cm"># Ask anything about your code</span></div>
+        <div><span class="ln">18</span><span class="acc">result</span> = <span class="acc">swal</span>.<span class="fn">ask</span>(</div>
+        <div><span class="ln">19</span>&nbsp;&nbsp;<span class="str">"Refactor auth middleware"</span></div>
+        <div><span class="ln">20</span>)</div>
+        <div><span class="ln">21</span><span class="fn">print</span>(<span class="acc">result</span>.<span class="fn">response</span>)<span class="cursor-blink"></span></div>
+      </div>
+    </div>
+    <div>
+      <h2 class="section-title">From codebase to <span class="hl">answers</span> in seconds.</h2>
+      <p class="section-desc">SWAL AI ingests your entire project, builds a semantic map, and routes your queries through a custom prompt architecture — no loops, no hallucinations.</p>
+      <div class="steps-list" style="margin-top:40px;">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h3>Ingest Your Codebase</h3>
+            <p>Point SWAL at any directory. It indexes files, resolves imports, and builds a full semantic context map in one pass.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h3>Inject Custom Persona</h3>
+            <p>System prompts are pre-engineered for roles: senior architect, code reviewer, refactoring engine. You choose the lens.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h3>Query. Refactor. Ship.</h3>
+            <p>Ask natural questions. Get precise, context-aware answers grounded in your actual code — never generic advice.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div class="features-section" id="features">
+  <div class="features-inner">
+    <div class="features-header">
+      <div>
+        <p class="section-label">02 // features</p>
+        <h2 class="section-title">Built for engineers<br>who move <span class="hl">fast.</span></h2>
+      </div>
+      <p class="section-desc">Every feature is engineered to reduce friction between you and working code.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Hybrid Reasoning Engine</h3>
+        <p>Claude 4.6's extended thinking mode activates on complex architectural queries. Deep analysis when you need it, fast responses when you don't.</p>
+        <span class="feature-tag active">active</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Full-Session Context</h3>
+        <p>Your entire codebase lives in context for the session duration. No chunking hacks. No lost references. Everything connected, all at once.</p>
+        <span class="feature-tag active">active</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡</div>
+        <h3>Loop Elimination Guard</h3>
+        <p>Custom prompt architecture detects and breaks repetitive reasoning cycles before they waste your tokens or degrade output quality.</p>
+        <span class="feature-tag active">active</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎭</div>
+        <h3>Custom Persona Injection</h3>
+        <p>Pre-configured system prompts for senior architect, code reviewer, documentation writer, or security auditor. One command to switch modes.</p>
+        <span class="feature-tag active">active</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔧</div>
+        <h3>Modular Architecture</h3>
+        <p>Swap models, system prompts, or context loaders without touching core logic. Designed for extension from day one.</p>
+        <span class="feature-tag active">active</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>Web Search Integration</h3>
+        <p>Pull in live documentation, Stack Overflow answers, or latest library releases directly into your session context. Real-time grounding.</p>
+        <span class="feature-tag">planned</span>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val">4.6</div>
+        <div class="stat-label">Claude model</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">0</div>
+        <div class="stat-label">loop tolerance</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">∞</div>
+        <div class="stat-label">context depth</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">1</div>
+        <div class="stat-label">session = full codebase</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<section id="arch">
+  <p class="section-label">03 // architecture</p>
+  <div class="arch-grid">
+    <div>
+      <h2 class="section-title">Engineered<br>for <span class="hl">precision.</span></h2>
+      <p class="section-desc" style="margin-bottom:40px;">SWAL AI is a layered system — each component designed to maximize Claude's capabilities while eliminating its weaknesses at scale.</p>
+      <div class="arch-diagram">
+        <div class="arch-node">
+          <div class="arch-node-icon">◈</div>
+          <div>
+            <div class="arch-node-label">User Interface Layer</div>
+            <div class="arch-node-sub">CLI / API / Web</div>
+          </div>
+          <span class="arch-node-badge">input</span>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-node">
+          <div class="arch-node-icon">⟁</div>
+          <div>
+            <div class="arch-node-label">SWAL Prompt Architect</div>
+            <div class="arch-node-sub">Persona injection + loop guard</div>
+          </div>
+          <span class="arch-node-badge">core</span>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-node">
+          <div class="arch-node-icon">⬡</div>
+          <div>
+            <div class="arch-node-label">Context Manager</div>
+            <div class="arch-node-sub">Token optimization + semantic index</div>
+          </div>
+          <span class="arch-node-badge">core</span>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-node">
+          <div class="arch-node-icon">◆</div>
+          <div>
+            <div class="arch-node-label">Claude 4.6 API</div>
+            <div class="arch-node-sub">Hybrid reasoning mode</div>
+          </div>
+          <span class="arch-node-badge">engine</span>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-node">
+          <div class="arch-node-icon">◉</div>
+          <div>
+            <div class="arch-node-label">Response Processor</div>
+            <div class="arch-node-sub">Format + validate + stream</div>
+          </div>
+          <span class="arch-node-badge">output</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-features">
+      <div class="arch-feat">
+        <h4><div class="dot2"></div>Context Management</h4>
+        <p>Optimized token budgeting ensures your entire codebase stays in context without hitting limits. Smart summarization for peripheral files.</p>
+      </div>
+      <div class="arch-feat">
+        <h4><div class="dot2"></div>Prompt Architecture</h4>
+        <p>Custom system prompt templates pre-engineered for each use case. Role-specific instructions, output format constraints, and anti-loop logic baked in.</p>
+      </div>
+      <div class="arch-feat">
+        <h4><div class="dot2"></div>Model Flexibility</h4>
+        <p>Modular model interface means you can swap between Claude Sonnet, Opus, or future models with a single config change. No refactoring required.</p>
+      </div>
+      <div class="arch-feat">
+        <h4><div class="dot2"></div>Session Persistence</h4>
+        <p>Conversation history is maintained and managed across turns. SWAL optimizes which history to keep vs. summarize to maximize effective context.</p>
+      </div>
+      <div class="arch-feat">
+        <h4><div class="dot2"></div>Tool Integration Layer</h4>
+        <p>(Planned) Plug in file system access, web search, and external APIs directly into the reasoning pipeline. One coherent tool-calling interface.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section" id="start">
+  <p class="cta-tag">> ready_to_initialize</p>
+  <h2 class="cta-title">Build with your<br><span class="hl">second brain.</span></h2>
+  <p class="cta-desc">SWAL AI is open source. Clone the repo, configure your API key, and get your first session running in under 5 minutes.</p>
+  <div class="cta-actions">
+    <a href="https://github.com" class="btn-primary" id="github">⌥ clone_repository</a>
+    <a href="#how" class="btn-secondary">→ read_the_docs</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">SWAL<span>_</span>AI</span>
+  <ul class="footer-links">
+    <li><a href="#">github</a></li>
+    <li><a href="#">docs</a></li>
+    <li><a href="#">changelog</a></li>
+    <li><a href="#">anthropic</a></li>
+  </ul>
+  <span class="footer-copy">© 2026 SWAL AI · built on claude</span>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animCursor() {
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animCursor);
+  }
+  animCursor();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width = '20px';
+      cursor.style.height = '20px';
+      ring.style.width = '56px';
+      ring.style.height = '56px';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width = '12px';
+      cursor.style.height = '12px';
+      ring.style.width = '36px';
+      ring.style.height = '36px';
+    });
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.step, .feature-card').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
