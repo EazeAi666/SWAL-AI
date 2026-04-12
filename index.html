@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWAL AI — Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020408;--bg2:#060d14;--panel:#0a1520;--border:#0e2a3d;--border2:#163347;--accent:#00e5ff;--accent2:#00ff9d;--accent3:#ff2d6b;--text:#c8dde8;--text-dim:#4a6b7c;--text-bright:#eaf6fb;--glow:0 0 20px rgba(0,229,255,0.35);--glow2:0 0 20px rgba(0,255,157,0.35);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.022) 1px,transparent 1px);background-size:55px 55px;pointer-events:none;z-index:0;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9000;}
+.page{position:fixed;inset:0;z-index:1;display:none;overflow:hidden;}
+.page.active{display:flex;}
+#authPage{align-items:center;justify-content:center;flex-direction:column;}
+.auth-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(ellipse,rgba(0,229,255,0.07) 0%,transparent 70%);pointer-events:none;}
+.auth-box{position:relative;width:100%;max-width:420px;padding:0 24px;}
+.auth-logo{text-align:center;margin-bottom:40px;animation:fadeUp .6s ease forwards;}
+.auth-logo-icon{font-size:2.8rem;margin-bottom:10px;filter:drop-shadow(0 0 16px rgba(0,229,255,0.6));}
+.auth-logo h1{font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--accent);text-shadow:var(--glow);letter-spacing:.1em;}
+.auth-logo h1 span{color:var(--accent2);}
+.auth-logo p{font-size:.7rem;color:var(--text-dim);margin-top:5px;letter-spacing:.1em;}
+.groq-badge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 12px;border:1px solid rgba(0,255,157,.3);font-size:.62rem;color:var(--accent2);letter-spacing:.1em;}
+.auth-card{background:var(--bg2);border:1px solid var(--border);padding:32px 30px;animation:fadeUp .6s ease forwards .15s;opacity:0;}
+.auth-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text-bright);margin-bottom:5px;}
+.auth-sub{font-size:.68rem;color:var(--text-dim);margin-bottom:22px;line-height:1.6;}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:13px 20px;background:var(--panel);border:1px solid var(--border2);color:var(--text-bright);font-family:'Share Tech Mono',monospace;font-size:.76rem;letter-spacing:.08em;cursor:pointer;transition:all .2s;margin-bottom:16px;}
+.google-btn:hover{border-color:var(--accent);color:var(--accent);}
+.google-btn:disabled,.auth-btn:disabled{opacity:.5;cursor:not-allowed;}
+.gicon{width:17px;height:17px;flex-shrink:0;}
+.divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider span{font-size:.6rem;color:var(--text-dim);letter-spacing:.1em;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:.6rem;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.field input{width:100%;background:var(--panel);border:1px solid var(--border);padding:11px 13px;font-family:'Share Tech Mono',monospace;font-size:.78rem;color:var(--text-bright);outline:none;transition:border-color .2s;}
+.field input:focus{border-color:rgba(0,229,255,.4);}
+.field input::placeholder{color:var(--text-dim);opacity:.45;}
+.auth-btn{width:100%;padding:13px;background:var(--accent);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.auth-btn:hover{box-shadow:var(--glow);background:#33eaff;}
+.auth-toggle{text-align:center;margin-top:16px;font-size:.66rem;color:var(--text-dim);}
+.auth-toggle a{color:var(--accent);cursor:pointer;}
+.auth-toggle a:hover{color:var(--accent2);}
+.auth-err{background:rgba(255,45,107,.08);border:1px solid rgba(255,45,107,.25);padding:9px 13px;font-size:.7rem;color:var(--accent3);margin-bottom:13px;display:none;}
+.auth-success{background:rgba(0,255,157,.06);border:1px solid rgba(0,255,157,.25);padding:9px 13px;font-size:.7rem;color:var(--accent2);margin-bottom:13px;display:none;}
+.forgot-link{text-align:right;margin-top:-8px;margin-bottom:12px;}
+.forgot-link a{font-size:.62rem;color:var(--text-dim);cursor:pointer;}
+.forgot-link a:hover{color:var(--accent);}
+#appPage{flex-direction:row;}
+.sidebar{width:255px;min-width:255px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.s-top{padding:14px 16px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.s-logo{font-family:'Space Mono',monospace;font-size:.88rem;font-weight:700;color:var(--accent);text-shadow:var(--glow);letter-spacing:.08em;}
+.s-logo span{color:var(--accent2);}
+.s-so{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:4px 10px;background:transparent;border:1px solid var(--border2);color:var(--text-dim);cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;}
+.s-so:hover{border-color:var(--accent3);color:var(--accent3);}
+.user-bar{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.u-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--bg);font-family:'Syne',sans-serif;flex-shrink:0;}
+.u-name{font-size:.7rem;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.u-email{font-size:.58rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);}
+.nav-tab{flex:1;padding:9px 0;text-align:center;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.tab-content.active{display:flex;}
+.new-btn{margin:10px;padding:9px 12px;background:transparent;border:1px solid var(--border2);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;}
+.new-btn:hover{border-color:var(--accent);color:var(--accent);}
+.plus{color:var(--accent);font-size:.95rem;}
+.sec-label{padding:7px 14px 3px;font-size:.57rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);}
+.scroll-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.chat-item{padding:9px 14px;cursor:pointer;border-left:2px solid transparent;transition:all .15s;position:relative;}
+.chat-item:hover{background:rgba(255,255,255,.02);}
+.chat-item.active{background:var(--panel);border-left-color:var(--accent);}
+.ci-title{font-size:.72rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.chat-item.active .ci-title{color:var(--text-bright);}
+.ci-meta{font-size:.58rem;color:var(--text-dim);display:flex;justify-content:space-between;}
+.ci-del{position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--accent3);font-size:.68rem;opacity:0;cursor:pointer;padding:4px;}
+.chat-item:hover .ci-del{opacity:1;}
+.proj-item{padding:11px 14px;cursor:pointer;transition:background .15s;}
+.proj-item:hover{background:rgba(255,255,255,.02);}
+.proj-name{font-size:.72rem;color:var(--text);margin-bottom:2px;}
+.proj-desc{font-size:.58rem;color:var(--text-dim);}
+.proj-count{font-size:.57rem;color:var(--accent2);margin-top:2px;}
+.empty-state{padding:16px;font-size:.68rem;color:var(--text-dim);text-align:center;line-height:1.7;}
+.s-footer{padding:11px 14px;border-top:1px solid var(--border);}
+.api-row{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--panel);border:1px solid var(--border);transition:border-color .2s;}
+.api-row:focus-within{border-color:rgba(0,255,157,.3);}
+.api-row input{flex:1;background:transparent;border:none;outline:none;font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text-dim);min-width:0;}
+.api-row input:focus{color:var(--text);}
+.api-row input::placeholder{color:var(--text-dim);opacity:.4;}
+.key-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);flex-shrink:0;transition:background .3s;}
+.key-dot.on{background:var(--accent2);box-shadow:var(--glow2);}
+.key-label{font-size:.55rem;color:var(--text-dim);margin-top:4px;letter-spacing:.08em;}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:11px 22px;border-bottom:1px solid var(--border);background:rgba(2,4,8,.9);backdrop-filter:blur(8px);flex-shrink:0;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.chat-title-inp{background:transparent;border:none;outline:none;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;color:var(--text-bright);min-width:60px;max-width:280px;}
+.chat-title-inp::placeholder{color:var(--text-dim);}
+.model-pill{display:flex;align-items:center;gap:5px;padding:4px 9px;border:1px solid rgba(0,255,157,.2);font-size:.58rem;color:var(--accent2);letter-spacing:.08em;}
+.model-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.topbar-right{display:flex;gap:7px;}
+.tb-btn{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:5px 11px;background:transparent;border:1px solid var(--border2);color:var(--text-dim);cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;}
+.tb-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tb-btn.danger:hover{border-color:var(--accent3);color:var(--accent3);}
+.messages{flex:1;overflow-y:auto;padding:26px 22px;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:40px 20px;animation:fadeIn .5s ease;}
+.welcome-icon{font-size:2.4rem;margin-bottom:11px;filter:drop-shadow(0 0 14px rgba(0,229,255,.5));}
+.welcome h2{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--text-bright);margin-bottom:7px;}
+.welcome h2 span{color:var(--accent);}
+.welcome p{font-size:.76rem;color:var(--text-dim);max-width:340px;line-height:1.7;margin-bottom:22px;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
+.chip{padding:7px 13px;border:1px solid var(--border2);font-size:.66rem;color:var(--text-dim);cursor:pointer;transition:all .2s;}
+.chip:hover{border-color:var(--accent);color:var(--text);background:rgba(0,229,255,.04);}
+.ci{color:var(--accent2);margin-right:4px;}
+.msg-row{display:flex;flex-direction:column;margin-bottom:3px;animation:fadeUp .3s ease;}
+.msg-header{display:flex;align-items:center;gap:9px;padding:11px 0 4px;}
+.msg-av{width:25px;height:25px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:.66rem;flex-shrink:0;}
+.msg-av.user{background:rgba(0,229,255,.1);color:var(--accent);border:1px solid rgba(0,229,255,.2);}
+.msg-av.assistant{background:rgba(0,255,157,.1);color:var(--accent2);border:1px solid rgba(0,255,157,.2);}
+.msg-name{font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.msg-name.user{color:var(--accent);}
+.msg-name.assistant{color:var(--accent2);}
+.msg-time{font-size:.57rem;color:var(--text-dim);margin-left:3px;}
+.msg-body{padding:11px 15px;margin-left:34px;border-left:1px solid var(--border);font-size:.78rem;line-height:1.8;color:var(--text);}
+.msg-body.user{border-color:rgba(0,229,255,.15);background:rgba(0,229,255,.03);color:var(--text-bright);}
+.msg-body.assistant{border-color:rgba(0,255,157,.1);background:rgba(0,255,157,.02);}
+.msg-body pre{background:var(--panel);border:1px solid var(--border);padding:11px 13px;margin:9px 0;overflow-x:auto;font-size:.72rem;line-height:1.6;}
+.msg-body code{font-family:'Share Tech Mono',monospace;color:var(--accent2);background:rgba(0,255,157,.06);padding:1px 4px;font-size:.77em;}
+.msg-body pre code{background:transparent;padding:0;color:var(--text);}
+.msg-body strong{color:var(--text-bright);}
+.msg-body em{color:var(--accent2);font-style:normal;}
+.msg-body h3{color:var(--accent);font-size:.8rem;margin:9px 0 4px;}
+.msg-body ul{padding-left:16px;}
+.msg-body li{margin-bottom:2px;}
+.err-msg{color:var(--accent3);font-size:.71rem;padding:8px 11px;border:1px solid rgba(255,45,107,.2);background:rgba(255,45,107,.05);margin-left:34px;margin-top:3px;}
+.think-row{display:flex;align-items:center;gap:9px;padding:11px 0;animation:fadeIn .3s ease;}
+.think-av{width:25px;height:25px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:.66rem;background:rgba(0,255,157,.1);color:var(--accent2);border:1px solid rgba(0,255,157,.2);}
+.think-dots{display:flex;gap:4px;padding:7px 13px;border-left:1px solid rgba(0,255,157,.12);margin-left:34px;}
+.think-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:db 1.4s ease-in-out infinite;opacity:.3;}
+.think-dots span:nth-child(2){animation-delay:.2s;}
+.think-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes db{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1);}}
+.input-area{padding:13px 22px 17px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.ctx-strip{display:flex;gap:7px;align-items:center;margin-bottom:9px;flex-wrap:wrap;}
+.ctx-label{font-size:.57rem;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;}
+.ctx-tag{font-size:.57rem;padding:2px 7px;border:1px solid var(--border2);color:var(--text-dim);}
+.ctx-tag.on{border-color:rgba(0,255,157,.3);color:var(--accent2);}
+.input-box{display:flex;background:var(--panel);border:1px solid var(--border);transition:border-color .2s;}
+.input-box:focus-within{border-color:rgba(0,229,255,.4);}
+.input-pfx{padding:0 11px;display:flex;align-items:center;color:var(--accent);border-right:1px solid var(--border);background:rgba(0,229,255,.04);flex-shrink:0;}
+textarea{flex:1;background:transparent;border:none;outline:none;padding:12px 13px;font-family:'Share Tech Mono',monospace;font-size:.78rem;color:var(--text-bright);resize:none;min-height:46px;max-height:140px;line-height:1.6;}
+textarea::placeholder{color:var(--text-dim);opacity:.44;}
+.send-btn{padding:0 17px;background:var(--accent);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;flex-shrink:0;clip-path:polygon(8px 0%,100% 0%,100% 100%,0% 100%);}
+.send-btn:hover{background:#33eaff;box-shadow:var(--glow);}
+.send-btn:disabled{background:var(--border);color:var(--text-dim);cursor:not-allowed;}
+.input-meta{display:flex;justify-content:space-between;margin-top:5px;}
+.hint{font-size:.57rem;color:var(--text-dim);}
+.hint kbd{border:1px solid var(--border2);padding:1px 4px;font-family:'Share Tech Mono',monospace;font-size:.55rem;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);padding:30px;width:100%;max-width:390px;animation:fadeUp .3s ease;}
+.modal h3{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;color:var(--text-bright);margin-bottom:5px;}
+.modal p{font-size:.68rem;color:var(--text-dim);margin-bottom:20px;line-height:1.6;}
+.modal-actions{display:flex;gap:9px;margin-top:16px;}
+.m-cancel{flex:1;padding:10px;background:transparent;border:1px solid var(--border2);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .2s;}
+.m-cancel:hover{border-color:var(--accent3);color:var(--accent3);}
+.m-confirm{flex:1;padding:10px;background:var(--accent2);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:.7rem;font-weight:700;cursor:pointer;transition:all .2s;}
+.m-confirm:hover{box-shadow:var(--glow2);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@media(max-width:680px){.sidebar{width:200px;min-width:200px;}.topbar,.messages,.input-area{padding-left:14px;padding-right:14px;}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- AUTH PAGE -->
+<div class="page active" id="authPage">
+  <div class="auth-glow"></div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">◈</div>
+      <h1>SWAL<span>_</span>AI</h1>
+      <p>// your personalized ai architect</p>
+      <div class="groq-badge">⚡ powered by groq + llama 3</div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div class="auth-card" id="signInCard">
+      <div class="auth-title">Sign in to continue</div>
+      <div class="auth-sub">Access your chats, projects and history.</div>
+      <div class="auth-err" id="siErr"></div>
+      <button class="google-btn" id="googleSignInBtn">
+        <svg class="gicon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <div class="divider"><span>or sign in with email</span></div>
+      <div class="field"><label>Email</label><input type="email" id="siEmail" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="siPass" placeholder="••••••••"></div>
+      <div class="forgot-link"><a id="forgotLink">Forgot password?</a></div>
+      <button class="auth-btn" id="emailSignInBtn">[ sign_in → ]</button>
+      <div class="auth-toggle">No account? <a id="goSignUp">Create one</a></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div class="auth-card" id="signUpCard" style="display:none;opacity:1;">
+      <div class="auth-title">Create your account</div>
+      <div class="auth-sub">Start building with your AI second brain.</div>
+      <div class="auth-err" id="suErr"></div>
+      <button class="google-btn" id="googleSignUpBtn">
+        <svg class="gicon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign up with Google
+      </button>
+      <div class="divider"><span>or use email</span></div>
+      <div class="field"><label>Full Name</label><input type="text" id="suName" placeholder="Your name"></div>
+      <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="suPass" placeholder="Min. 6 characters"></div>
+      <button class="auth-btn" id="emailSignUpBtn">[ create_account → ]</button>
+      <div class="auth-toggle">Have an account? <a id="goSignIn">Sign in</a></div>
+    </div>
+
+    <!-- FORGOT PASSWORD -->
+    <div class="auth-card" id="forgotCard" style="display:none;opacity:1;">
+      <div class="auth-title">Reset your password</div>
+      <div class="auth-sub">Enter your email and we'll send a recovery link.</div>
+      <div class="auth-err" id="fpErr"></div>
+      <div class="auth-success" id="fpSuccess">✓ Recovery email sent! Check your inbox.</div>
+      <div class="field"><label>Email</label><input type="email" id="fpEmail" placeholder="you@example.com"></div>
+      <button class="auth-btn" id="sendResetBtn">[ send_recovery_email → ]</button>
+      <div class="auth-toggle"><a id="backToSignIn">← Back to sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP PAGE -->
+<div class="page" id="appPage">
+  <aside class="sidebar">
+    <div class="s-top">
+      <span class="s-logo">SWAL<span>_</span>AI</span>
+      <button class="s-so" id="signOutBtn">sign out</button>
+    </div>
+    <div class="user-bar">
+      <div class="u-av" id="uAv">?</div>
+      <div style="flex:1;min-width:0;">
+        <div class="u-name" id="uName">—</div>
+        <div class="u-email" id="uEmail">—</div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tabChats">Chats</div>
+      <div class="nav-tab" id="tabProjects">Projects</div>
+      <div class="nav-tab" id="tabHistory">History</div>
+    </div>
+    <div class="tab-content active" id="tab-chats">
+      <button class="new-btn" id="newChatBtn"><span class="plus">+</span>New Chat</button>
+      <div class="sec-label">// recent</div>
+      <div class="scroll-list" id="chatList"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="tab-content" id="tab-projects">
+      <button class="new-btn" id="newProjBtn"><span class="plus">+</span>New Project</button>
+      <div class="sec-label">// workspaces</div>
+      <div class="scroll-list" id="projList"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="tab-content" id="tab-history">
+      <div class="sec-label">// all sessions</div>
+      <div class="scroll-list" id="histList"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="s-footer">
+      <div class="api-row">
+        <span style="color:var(--accent2);font-size:.78rem;">⚡</span>
+        <input type="password" id="apiKey" placeholder="gsk_groq_api_key...">
+        <div class="key-dot" id="keyDot"></div>
+      </div>
+      <div class="key-label" id="keyLabel">paste groq key to activate</div>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <div class="topbar">
+      <div class="topbar-left">
+        <input class="chat-title-inp" id="chatTitle" placeholder="Untitled Chat" maxlength="55">
+        <div class="model-pill">groq // llama3-70b</div>
+      </div>
+      <div class="topbar-right">
+        <button class="tb-btn" id="exportBtn">↓ export</button>
+        <button class="tb-btn danger" id="deleteChatBtn">✕ delete</button>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <div class="ctx-strip">
+        <span class="ctx-label">ctx //</span>
+        <div class="ctx-tag on">✓ firebase</div>
+        <div class="ctx-tag on">✓ firestore</div>
+        <div class="ctx-tag on">⚡ groq</div>
+        <div class="ctx-tag" id="projTag">no project</div>
+      </div>
+      <div class="input-box">
+        <div class="input-pfx">&gt;</div>
+        <textarea id="userInput" placeholder="Ask anything about your codebase..."></textarea>
+        <button class="send-btn" id="sendBtn">send →</button>
+      </div>
+      <div class="input-meta">
+        <span class="hint"><kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> newline</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projModal">
+  <div class="modal">
+    <h3>New Project</h3>
+    <p>Group related chats into a focused workspace.</p>
+    <div class="field"><label>Project Name</label><input type="text" id="pName" placeholder="e.g. My SaaS App"></div>
+    <div class="field"><label>Description (optional)</label><input type="text" id="pDesc" placeholder="What are you building?"></div>
+    <div class="modal-actions">
+      <button class="m-cancel" id="cancelProjBtn">Cancel</button>
+      <button class="m-confirm" id="confirmProjBtn">Create →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ALL SCRIPTS AFTER DOM ══ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendPasswordResetEmail, onAuthStateChanged, signOut, updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, setDoc, getDoc,
+  addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── FIREBASE ──
+const firebaseConfig = {
+  apiKey: "AIzaSyBPBgLTHAbvHbRaI6G4R8xOAWODBNbUBIU",
+  authDomain: "swal-learn.firebaseapp.com",
+  projectId: "swal-learn",
+  storageBucket: "swal-learn.firebasestorage.app",
+  messagingSenderId: "1047471430457",
+  appId: "1:1047471430457:web:8657f1cca95a58c7c4e6e8"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+const gProvider = new GoogleAuthProvider();
+
+// ── GROQ ──
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = "llama3-70b-8192";
+
+// ── STATE ──
+let currentUser = null, chats = {}, projects = {}, activeChat = null, busy = false;
+let unsubChats = null, unsubProjects = null;
+
+// ── HELPERS ──
+const $ = id => document.getElementById(id);
+const getTime = () => new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'});
+const greet = () => { const h = new Date().getHours(); return h<12?'morning':h<17?'afternoon':'evening'; };
+const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const val = id => $(id)?.value.trim() || '';
+
+function showErr(id, msg) {
+  const el = $(id); if (!el) return;
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function showCard(which) {
+  $('signInCard').style.display = which === 'in' ? 'block' : 'none';
+  $('signUpCard').style.display = which === 'up' ? 'block' : 'none';
+  $('forgotCard').style.display = which === 'fp' ? 'block' : 'none';
+}
+
+function setLoading(on) {
+  document.querySelectorAll('.auth-btn, .google-btn').forEach(b => b.disabled = on);
+}
+
+function fmt(t) {
+  return t
+    .replace(/```(\w+)?\n?([\s\S]*?)```/g, (_,l,c) => `<pre><code>${esc(c.trim())}</code></pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^[-•] (.+)$/gm, '<li>$1</li>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    currentUser = user;
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        name: user.displayName || user.email.split('@')[0],
+        email: user.email, createdAt: serverTimestamp()
+      });
+    }
+    launchApp();
+  } else {
+    currentUser = null;
+    showPage('authPage');
+  }
+});
+
+// ── GOOGLE SIGN IN ──
+async function doGoogleSignIn() {
+  try {
+    setLoading(true);
+    await signInWithPopup(auth, gProvider);
+  } catch(e) {
+    setLoading(false);
+    const msg = e.code === 'auth/popup-closed-by-user' ? '⚠ Popup closed. Try again.' :
+                e.code === 'auth/popup-blocked' ? '⚠ Popup blocked. Allow popups for this site.' :
+                '⚠ ' + e.message;
+    showErr('siErr', msg);
+  }
+}
+
+// ── EMAIL SIGN IN ──
+async function doEmailSignIn() {
+  const email = val('siEmail'), pass = val('siPass');
+  if (!email || !pass) return showErr('siErr', '⚠ Please fill in all fields.');
+  try {
+    setLoading(true);
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    setLoading(false);
+    showErr('siErr',
+      e.code === 'auth/user-not-found' ? '⚠ No account found with this email.' :
+      e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? '⚠ Wrong email or password.' :
+      e.code === 'auth/too-many-requests' ? '⚠ Too many attempts. Try again later.' :
+      '⚠ ' + e.message);
+  }
+}
+
+// ── EMAIL SIGN UP ──
+async function doEmailSignUp() {
+  const name = val('suName'), email = val('suEmail'), pass = val('suPass');
+  if (!name || !email || !pass) return showErr('suErr', '⚠ Please fill in all fields.');
+  if (pass.length < 6) return showErr('suErr', '⚠ Password needs at least 6 characters.');
+  try {
+    setLoading(true);
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+  } catch(e) {
+    setLoading(false);
+    showErr('suErr',
+      e.code === 'auth/email-already-in-use' ? '⚠ Email already registered. Sign in instead.' :
+      e.code === 'auth/invalid-email' ? '⚠ Invalid email address.' :
+      '⚠ ' + e.message);
+  }
+}
+
+// ── FORGOT PASSWORD ──
+async function doForgotPassword() {
+  const email = val('fpEmail');
+  if (!email) return showErr('fpErr', '⚠ Please enter your email.');
+  try {
+    await sendPasswordResetEmail(auth, email);
+    $('fpSuccess').style.display = 'block';
+    $('fpErr').style.display = 'none';
+  } catch(e) {
+    showErr('fpErr',
+      e.code === 'auth/user-not-found' ? '⚠ No account found with this email.' :
+      '⚠ ' + e.message);
+  }
+}
+
+// ── SIGN OUT ──
+async function doSignOut() {
+  if (unsubChats) unsubChats();
+  if (unsubProjects) unsubProjects();
+  chats = {}; projects = {}; activeChat = null;
+  await signOut(auth);
+}
+
+// ── WIRE UP ALL BUTTONS ──
+$('googleSignInBtn').addEventListener('click', doGoogleSignIn);
+$('googleSignUpBtn').addEventListener('click', doGoogleSignIn);
+$('emailSignInBtn').addEventListener('click', doEmailSignIn);
+$('emailSignUpBtn').addEventListener('click', doEmailSignUp);
+$('sendResetBtn').addEventListener('click', doForgotPassword);
+$('signOutBtn').addEventListener('click', doSignOut);
+$('goSignUp').addEventListener('click', () => showCard('up'));
+$('goSignIn').addEventListener('click', () => showCard('in'));
+$('forgotLink').addEventListener('click', () => showCard('fp'));
+$('backToSignIn').addEventListener('click', () => showCard('in'));
+$('siPass').addEventListener('keydown', e => { if(e.key==='Enter') doEmailSignIn(); });
+$('suPass').addEventListener('keydown', e => { if(e.key==='Enter') doEmailSignUp(); });
+$('fpEmail').addEventListener('keydown', e => { if(e.key==='Enter') doForgotPassword(); });
+$('tabChats').addEventListener('click', () => switchTab('chats', $('tabChats')));
+$('tabProjects').addEventListener('click', () => switchTab('projects', $('tabProjects')));
+$('tabHistory').addEventListener('click', () => switchTab('history', $('tabHistory')));
+$('newChatBtn').addEventListener('click', () => newChat());
+$('newProjBtn').addEventListener('click', openProjModal);
+$('cancelProjBtn').addEventListener('click', closeProjModal);
+$('confirmProjBtn').addEventListener('click', createProject);
+$('sendBtn').addEventListener('click', sendMsg);
+$('exportBtn').addEventListener('click', exportChat);
+$('deleteChatBtn').addEventListener('click', () => { if(activeChat) deleteChat(activeChat); });
+$('chatTitle').addEventListener('change', e => saveChatTitle(e.target.value));
+$('apiKey').addEventListener('input', checkKey);
+$('userInput').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} });
+$('userInput').addEventListener('input', e => autoResize(e.target));
+
+// ── TABS ──
+function switchTab(name, el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  $('tab-' + name).classList.add('active');
+}
+
+// ── LAUNCH APP ──
+function launchApp() {
+  showPage('appPage');
+  const name = currentUser.displayName || currentUser.email.split('@')[0];
+  $('uAv').textContent = name[0].toUpperCase();
+  $('uName').textContent = name;
+  $('uEmail').textContent = currentUser.email;
+  subscribeData();
+  showWelcome();
+}
+
+function subscribeData() {
+  if (!currentUser) return;
+  unsubChats = onSnapshot(
+    query(collection(db,'users',currentUser.uid,'chats'), orderBy('updatedAt','desc')),
+    snap => {
+      chats = {};
+      snap.forEach(d => chats[d.id] = { id: d.id, ...d.data() });
+      renderChatList(); renderHistoryList();
+    }
+  );
+  unsubProjects = onSnapshot(
+    query(collection(db,'users',currentUser.uid,'projects'), orderBy('createdAt','desc')),
+    snap => {
+      projects = {};
+      snap.forEach(d => projects[d.id] = { id: d.id, ...d.data() });
+      renderProjList();
+    }
+  );
+}
+
+// ── NEW CHAT ──
+async function newChat(projId = null) {
+  if (!currentUser) return;
+  const ref = await addDoc(collection(db,'users',currentUser.uid,'chats'), {
+    title: 'New Chat', messages: [], projId: projId || null,
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+  });
+  openChat(ref.id);
+  switchTab('chats', $('tabChats'));
+}
+
+function openChat(id) {
+  activeChat = id;
+  const c = chats[id]; if (!c) return;
+  $('chatTitle').value = c.title === 'New Chat' ? '' : c.title;
+  $('chatTitle').placeholder = c.title;
+  const pt = $('projTag');
+  if (c.projId && projects[c.projId]) { pt.textContent = '◈ ' + projects[c.projId].name; pt.classList.add('on'); }
+  else { pt.textContent = 'no project'; pt.classList.remove('on'); }
+  renderMessages(c.messages || []);
+  renderChatList();
+}
+
+async function saveChatTitle(v) {
+  if (!activeChat || !v.trim() || !currentUser) return;
+  await updateDoc(doc(db,'users',currentUser.uid,'chats',activeChat), { title: v.trim() });
+}
+
+async function deleteChat(id) {
+  if (!currentUser) return;
+  await deleteDoc(doc(db,'users',currentUser.uid,'chats',id));
+  if (activeChat === id) {
+    const rem = Object.keys(chats).filter(k => k !== id);
+    if (rem.length) openChat(rem[0]); else showWelcome();
+  }
+}
+
+// ── PROJECTS ──
+function openProjModal() { $('projModal').classList.add('open'); $('pName').focus(); }
+function closeProjModal() { $('projModal').classList.remove('open'); $('pName').value=''; $('pDesc').value=''; }
+async function createProject() {
+  const name = val('pName'), desc = val('pDesc');
+  if (!name || !currentUser) return;
+  const ref = await addDoc(collection(db,'users',currentUser.uid,'projects'), { name, desc, createdAt: serverTimestamp() });
+  closeProjModal(); newChat(ref.id);
+}
+
+// ── SEND MESSAGE ──
+async function sendMsg() {
+  const inp = $('userInput');
+  const text = inp.value.trim();
+  if (!text || busy || !activeChat || !currentUser) return;
+  const groqKey = $('apiKey').value.trim();
+  if (!groqKey || !groqKey.startsWith('gsk_')) {
+    addMsgEl('assistant', '⚠ No Groq API key detected. Paste your key (starts with gsk_) in the bottom-left field.', true);
+    return;
+  }
+  const c = chats[activeChat];
+  busy = true; $('sendBtn').disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+  const msgs = c.messages || [];
+  if (!msgs.length) {
+    const title = text.slice(0,42) + (text.length>42?'...':'');
+    await updateDoc(doc(db,'users',currentUser.uid,'chats',activeChat), { title });
+    $('chatTitle').value = title;
+  }
+  const newMsg = { role:'user', content:text, ts:Date.now() };
+  const updated = [...msgs, newMsg];
+  await updateDoc(doc(db,'users',currentUser.uid,'chats',activeChat), { messages:updated, updatedAt:serverTimestamp() });
+  addMsgEl('user', text);
+  showThink();
+  try {
+    const history = updated.map(m => ({ role:m.role, content:m.content }));
+    const res = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+groqKey },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          { role:'system', content:'You are SWAL AI, a personalized AI architect and senior coding assistant. Help developers understand, refactor, review and build codebases. Be precise, technical and direct. Format code with markdown code blocks.' },
+          ...history
+        ],
+        temperature: 0.7, max_tokens: 1024
+      })
+    });
+    hideThink();
+    const data = await res.json();
+    if (data.error) {
+      addMsgEl('assistant', '⚠ Groq Error: ' + data.error.message, true);
+    } else {
+      const reply = data.choices?.[0]?.message?.content || '(empty)';
+      const replyMsg = { role:'assistant', content:reply, ts:Date.now() };
+      await updateDoc(doc(db,'users',currentUser.uid,'chats',activeChat), { messages:[...updated,replyMsg], updatedAt:serverTimestamp() });
+      addMsgEl('assistant', reply);
+    }
+  } catch(err) {
+    hideThink();
+    addMsgEl('assistant', '⚠ Connection error: ' + err.message, true);
+  }
+  busy = false; $('sendBtn').disabled = false; $('userInput').focus();
+}
+
+// ── RENDER ──
+function renderMessages(messages) {
+  const el = $('messages'); el.innerHTML='';
+  if (!messages || !messages.length) { showWelcome(); return; }
+  messages.forEach(m => addMsgEl(m.role, m.content));
+  el.scrollTop = el.scrollHeight;
+}
+
+function showWelcome() {
+  $('messages').innerHTML = `
+    <div class="welcome">
+      <div class="welcome-icon">◈</div>
+      <h2>SWAL <span>AI</span> Ready.</h2>
+      <p>Powered by Groq + LLaMA 3. Paste your code or start with a suggestion.</p>
+      <div class="chips">
+        <div class="chip" id="c1"><span class="ci">⟁</span>Explain my authentication flow</div>
+        <div class="chip" id="c2"><span class="ci">⟁</span>Refactor this function</div>
+        <div class="chip" id="c3"><span class="ci">⟁</span>Find security vulnerabilities</div>
+        <div class="chip" id="c4"><span class="ci">⟁</span>Write unit tests for this module</div>
+        <div class="chip" id="c5"><span class="ci">⟁</span>Generate TypeScript types</div>
+        <div class="chip" id="c6"><span class="ci">⟁</span>Review my code architecture</div>
+      </div>
+    </div>`;
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $('userInput').value = chip.textContent.replace(/^[⟁◈]\s*/,'').trim();
+      autoResize($('userInput')); $('userInput').focus();
+    });
+  });
+}
+
+function addMsgEl(role, content, isErr=false) {
+  const el = $('messages');
+  el.querySelector('.welcome')?.remove();
+  const row = document.createElement('div'); row.className='msg-row';
+  const name = currentUser ? (currentUser.displayName||currentUser.email.split('@')[0]) : 'You';
+  row.innerHTML = `<div class="msg-header">
+    <div class="msg-av ${role}">${role==='user'?name[0].toUpperCase():'◈'}</div>
+    <span class="msg-name ${role}">${role==='user'?name:'SWAL AI'}</span>
+    <span class="msg-time">${getTime()}</span>
+  </div>`;
+  if (isErr) {
+    const e = document.createElement('div'); e.className='err-msg'; e.textContent=content; row.appendChild(e);
+  } else {
+    const b = document.createElement('div'); b.className=`msg-body ${role}`; b.innerHTML=fmt(content); row.appendChild(b);
+  }
+  el.appendChild(row); el.scrollTop=el.scrollHeight;
+}
+
+function showThink() {
+  const el = $('messages');
+  const t = document.createElement('div'); t.className='think-row'; t.id='thinkEl';
+  t.innerHTML='<div class="think-av">◈</div><div class="think-dots"><span></span><span></span><span></span></div>';
+  el.appendChild(t); el.scrollTop=99999;
+}
+function hideThink() { $('thinkEl')?.remove(); }
+
+function renderChatList() {
+  const list = $('chatList');
+  const sorted = Object.values(chats).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+  if (!sorted.length) { list.innerHTML='<div class="empty-state">No chats yet.<br>Press + New Chat.</div>'; return; }
+  list.innerHTML = sorted.map(c => `
+    <div class="chat-item ${c.id===activeChat?'active':''}" data-id="${c.id}">
+      <div class="ci-title">${esc(c.title||'Untitled')}</div>
+      <div class="ci-meta">
+        <span>${(c.messages||[]).length} msgs</span>
+        <span>${c.projId&&projects[c.projId]?'◈ '+projects[c.projId].name:''}</span>
+      </div>
+      <span class="ci-del" data-del="${c.id}">✕</span>
+    </div>`).join('');
+  list.querySelectorAll('.chat-item').forEach(el => {
+    el.addEventListener('click', () => openChat(el.dataset.id));
+  });
+  list.querySelectorAll('.ci-del').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); deleteChat(el.dataset.del); });
+  });
+}
+
+function renderHistoryList() {
+  const list = $('histList');
+  const sorted = Object.values(chats).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+  if (!sorted.length) { list.innerHTML='<div class="empty-state">No sessions yet.</div>'; return; }
+  list.innerHTML = sorted.map(c => `
+    <div class="chat-item ${c.id===activeChat?'active':''}" data-id="${c.id}">
+      <div class="ci-title">${esc(c.title||'Untitled')}</div>
+      <div class="ci-meta"><span>${c.projId&&projects[c.projId]?'◈ '+projects[c.projId].name:'no project'}</span></div>
+    </div>`).join('');
+  list.querySelectorAll('.chat-item').forEach(el => {
+    el.addEventListener('click', () => { openChat(el.dataset.id); switchTab('chats',$('tabChats')); });
+  });
+}
+
+function renderProjList() {
+  const list = $('projList');
+  const sorted = Object.values(projects).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  if (!sorted.length) { list.innerHTML='<div class="empty-state">No projects yet.</div>'; return; }
+  const icons=['◈','◉','⬡','⟁','◆'];
+  list.innerHTML = sorted.map((p,i)=>{
+    const count=Object.values(chats).filter(c=>c.projId===p.id).length;
+    return `<div class="proj-item" data-pid="${p.id}">
+      <div class="proj-name">${icons[i%5]} ${esc(p.name)}</div>
+      <div class="proj-desc">${esc(p.desc||'No description')}</div>
+      <div class="proj-count">${count} chat${count!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.proj-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.pid;
+      const pc = Object.values(chats).filter(c=>c.projId===id);
+      if (pc.length) openChat(pc[0].id); else newChat(id);
+      switchTab('chats', $('tabChats'));
+    });
+  });
+}
+
+function checkKey() {
+  const k = $('apiKey').value.trim();
+  const ok = k.startsWith('gsk_');
+  $('keyDot').className = 'key-dot' + (ok?' on':'');
+  $('keyLabel').textContent = ok ? '⚡ groq connected ✓' : 'paste groq key to activate';
+}
+
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,140)+'px'; }
+
+function exportChat() {
+  const c = chats[activeChat]; if (!c) return;
+  const txt=(c.messages||[]).map(m=>`[${m.role.toUpperCase()}]\n${m.content}`).join('\n\n---\n\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download=`swal-${(c.title||'chat').replace(/\s+/g,'-')}.txt`;
+  a.click();
+}
+</script>
+</body>
+</html>
